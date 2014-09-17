@@ -10,9 +10,11 @@ using namespace cv;
  *		chosen lines on the original image given
  *		several points
  * Input:
- *		
+ *		image: original image
+ *		pt1, pt2, pt3, pt4, pt5, pt6, pt7, pt8:
+ *		8 points to draw on the image
  * Output:
- *		
+ *		image
  *------------------------------------------------
  */
 
@@ -42,9 +44,9 @@ void TDrawChosenLine(Mat& image, const Mat pt1, const Mat pt2,
  *		convert2Homogeneous - convert point to 
  *		homogeneous representation
  * Input:
- *		
+ *		pt: point which data type is 'Point2d'
  * Output:
- *		
+ *		return Mat h
  *------------------------------------------------
  */
 
@@ -60,9 +62,9 @@ Mat convert2Homogeneous(const Point2d pt)
  *		normHomogeneous - normalize the homogeneous 
  *		representation
  * Input:
- *		
+ *		homo: homogeneous point representation
  * Output:
- *		
+ *		homo
  *-------------------------------------------------
  */
 
@@ -78,9 +80,10 @@ void normHomogeneous(Mat& homo)
  *		constructLine - cross product of two 
  *		homogeneous coordinates to form a line
  * Input:
- *		
+ *		pt1: selected point 1
+ *		pt2: selected point 2
  * Output:
- *		
+ *		return Mat l
  *------------------------------------------------
  */
 
@@ -96,9 +99,10 @@ Mat constructLine(const Mat pt1, const Mat pt2)
  *		constructPoint - cross product of two 
  *		homogeneous lines to form a intersection
  * Input:
- *		
+ *		l1: selected line 1
+ *		l2: selected line 2
  * Output:
- *		
+ *		return Mat pt
  *------------------------------------------------
  */
 
@@ -217,9 +221,9 @@ Mat imageBackProj(const Mat& iFrame, Mat& oFrame, const Size frame_size, const M
  *		distortion by projecting vanishing line 
  *		to the infinity line
  * Input:
- *		
+ *		VL: vanishing line
  * Output:
- *		
+ *		return Mat Hp
  *------------------------------------------------
  */
 
@@ -239,9 +243,11 @@ Mat projectCorrectH(const Mat VL)
  *		distortion based on corrected projective 
  *		distortion plane
  * Input:
- *		
+ *		Hp: Projective Transform matrix
+ *		l1, l2, l3, l4: two pairs of orthogonal
+ *		lines
  * Output:
- *		
+ *		return Mat Ha
  *------------------------------------------------
  */
 
@@ -250,6 +256,7 @@ Mat affineCorrectH(const Mat Hp, Mat l1, Mat l2, Mat l3, Mat l4)
 	Mat Hpinv = Hp.inv();
 	Mat Hpit = Hpinv.t();
 	
+	//get corrected lines from projective distortion
 	l1 = Hpit*l1;
 	l2 = Hpit*l2;
 	l3 = Hpit*l3;
@@ -265,15 +272,19 @@ Mat affineCorrectH(const Mat Hp, Mat l1, Mat l2, Mat l3, Mat l4)
 	Mat L(2, 2, CV_64F, Ldata);
 	Mat b(2, 1, CV_64F, bdata);
 
+	//get s11 and s12 of S matrix, S matrix is positive definite
 	Mat s = L.inv()*b;
 
 	double Sdata[2][2] = {{s.at<double>(0,0), s.at<double>(1,0)}, {s.at<double>(1,0), 1.0}};
 
+	//form S matrix
 	Mat S = Mat(2, 2, CV_64F, Sdata);
 
+	//singular value decomposition: S = V*D2*Vt
 	Mat V, D2, D, Vt;
 	SVD::compute(S, D2, V, Vt, 0);
 
+	//eigen vector of rotation matrix A
 	sqrt(D2, D);
 	D = Mat::diag(D);
 
@@ -296,9 +307,13 @@ Mat affineCorrectH(const Mat Hp, Mat l1, Mat l2, Mat l3, Mat l4)
  *		chosen lines on the original image given
  *		several points
  * Input:
- *		
+ *		image: original image
+ *		pt1, pt2, pt3, pt4, pt5, pt6, pt7, pt8,
+ *		pt9, pt10, pt11, pt12, pt13, pt14, pt15:
+ *		15 points for drawing 5 pairs of orthogonal
+ *		lines
  * Output:
- *		
+ *		image
  *------------------------------------------------
  */
 
@@ -342,9 +357,10 @@ void ODrawChosenLine(Mat& image, const Mat pt1, const Mat pt2,
  *		OneStepH - find the homography transformation  
  *		by one step method
  * Input:
- *		
+ *		l1, l2, l3, l4, l5, l6, l7, l8, l9, l10: 
+ *		5 pairs of orthogonal lines
  * Output:
- *		
+ *		return Mat H
  *---------------------------------------------------
  */
 
@@ -352,6 +368,7 @@ Mat OneStepH(Mat l1, Mat l2, Mat l3, Mat l4, Mat l5,
 	Mat l6, Mat l7, Mat l8, Mat l9, Mat l10)
 {
 
+	// w matrix data, w.t()*z = 0, but we can set f = 1, so we have 5 degrees of freedom to solve
 	double wdata[5][5] = {
 	{
 		l1.at<double>(0,0)*l2.at<double>(0,0),
@@ -400,8 +417,10 @@ Mat OneStepH(Mat l1, Mat l2, Mat l3, Mat l4, Mat l5,
 
 	Mat w(5, 5, CV_64F, wdata);
 	Mat b(5, 1, CV_64F, bdata);
+	// solve z vector to get (a, b, c, d, e), f is 1
 	Mat z = w.inv()*b;
 	
+	//conic matrix data
 	double Cinfdata[3][3] = {
 		{z.at<double>(0,0), 0.5*z.at<double>(1,0), 0.5*z.at<double>(3,0)},
 		{0.5*z.at<double>(1,0), z.at<double>(2,0), 0.5*z.at<double>(4,0)},
@@ -414,6 +433,7 @@ Mat OneStepH(Mat l1, Mat l2, Mat l3, Mat l4, Mat l5,
 
 	Mat V, D, D2, Vt;
 
+	// get A*At matrix, which is left top 2*2 matrix in the Cinf matrix
 	Mat AAt = Cinf(Range(0, 2), Range(0, 2));
 	SVD::compute(AAt, D2, V, Vt, 0);
 
@@ -423,13 +443,15 @@ Mat OneStepH(Mat l1, Mat l2, Mat l3, Mat l4, Mat l5,
 	D = Mat::diag(D);
 
 	cout << "D: " << D << endl;
-
+	
+	// get rotation matrix A
 	Mat A = V*D*Vt;
 	cout << "A: " << A << endl;
 
 	double rdata[2][1] = {{Cinf.at<double>(0,2)},{Cinf.at<double>(1,2)}};
 	Mat r(2, 1, CV_64F, rdata);
 
+	// get v matrix in H matrix, H = [[ A, 0 ]; [ v.t(), 1 ]]
 	Mat v;
 	solve(A, r, v, DECOMP_SVD);
 	
@@ -449,15 +471,46 @@ Mat OneStepH(Mat l1, Mat l2, Mat l3, Mat l4, Mat l5,
 
 int main()
 {
-	//char* imgName = "Set1/Img1.jpg";
-	//char* dataName = "set1Img1.yml";
-	char* imgName = "Set1/Img2.jpg";
-	char* dataName = "set1Img2.yml";
+	/*-----------------------------------------
+	 * read image and related selected points
+	 * in the corresponding image
+	 * we have 11 images and 11 data yml files
+	 *-----------------------------------------
+	 */
+
+	char* imgName = "Set1/Img1.jpg";
+	char* dataName = "set1Img1.yml";
+	//char* imgName = "Set1/Img2.jpg";
+	//char* dataName = "set1Img2.yml";
+	//char* imgName = "Set2/Img1.jpg";
+	//char* dataName = "set2Img1.yml";
+	//char* imgName = "Set2/Img2.jpg";
+	//char* dataName = "set2Img2.yml";
+	//char* imgName = "Set3/Img1.jpg";
+	//char* dataName = "set3Img1.yml";
+	//char* imgName = "Set3/Img2.jpg";
+	//char* dataName = "set3Img2.yml";
+	//char* imgName = "Set4/Img1.jpg";
+	//char* dataName = "set4Img1.yml";
+	//char* imgName = "Set4/Img2.jpg";
+	//char* dataName = "set4Img2.yml";
+	//char* imgName = "OwnSet/Img1.jpg";
+	//char* dataName = "ownSetImg1.yml";
+	//char* imgName = "OwnSet/Img2.jpg";
+	//char* dataName = "ownSetImg2.yml";
+	//char* imgName = "OwnSet/Img3.jpg";
+	//char* dataName = "ownSetImg3.yml";
 
 	Mat img = imread(imgName);
 
 	Size frame_size = img.size();
 
+	/*----------------------------
+	 * Two Steps Method
+	 *----------------------------
+	 */
+
+	// read data yml files to import selected points in the image
 	Mat x1, x2, x3, x4, x5, x6, x7, x8;
 	FileStorage fs(dataName, CV_STORAGE_READ);
 	if(!fs.isOpened())
@@ -474,6 +527,7 @@ int main()
 	fs["x7"] >> x7;
 	fs["x8"] >> x8;
 
+	// draw selected lines in the two steps method
 	TDrawChosenLine(img, x1, x2, x3, x4, x5, x6, x7, x8);
 	
 	Mat l1 = constructLine(x1, x2);
@@ -483,9 +537,11 @@ int main()
 	Mat l5 = constructLine(x5, x6);
 	Mat l6 = constructLine(x7, x8);
 
+	// get intersections of two pairs of selected lines
 	Mat P = constructPoint(l1, l2);
 	Mat Q = constructPoint(l3, l4);
 
+	// get vanishing line
 	Mat VL = constructLine(P, Q);
 
 	Mat Hp = projectCorrectH(VL);
@@ -494,12 +550,14 @@ int main()
 	
 	Mat imgProjCorrected, imgAffineCorrected;
 
+	// interpolate the image and correct distortion
 	imageBackProj(img, imgProjCorrected, frame_size, Hp);
 
 	Mat Ha = affineCorrectH(Hp, l1, l3, l5, l6);
 
 	cout << "Ha: " << Ha << endl;
 
+	// interpolate the image and correct distortion
 	imageBackProj(img, imgAffineCorrected, frame_size, Ha.inv()*Hp); 
 
 	namedWindow("TwoStep_Img", WINDOW_AUTOSIZE);
@@ -520,6 +578,7 @@ int main()
 
 	Mat ox1, ox2, ox3, ox4, ox5, ox6, ox7, ox8, ox9, ox10, ox11, ox12, ox13, ox14, ox15;
 
+	// import selected points in the one step method
 	fs["ox1"] >> ox1;
 	fs["ox2"] >> ox2;
 	fs["ox3"] >> ox3;
@@ -536,6 +595,7 @@ int main()
 	fs["ox14"] >> ox14;
 	fs["ox15"] >> ox15;
 
+	// draw selected lines in the one step method
 	ODrawChosenLine(img, ox1, ox2, ox3, ox4, ox5, ox6, ox7, ox8, ox9, ox10, ox11, ox12, ox13, ox14, ox15);
 
 	Mat ol1 = constructLine(ox1, ox2);
@@ -555,6 +615,8 @@ int main()
 	cout << "H: " << H << endl;
 
 	Mat imgOneCorrected;
+
+	// interpolate the image and correct distortion
 	imageBackProj(img, imgOneCorrected, frame_size, H.inv());
 
 	namedWindow("OneStep_Img", WINDOW_AUTOSIZE);
