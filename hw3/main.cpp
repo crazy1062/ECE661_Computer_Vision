@@ -16,46 +16,25 @@ using namespace cv;
  *------------------------------------------------
  */
 
-void TDrawChosenLine(Mat& image, const Point2d pt1, const Point2d pt2,
-	const Point2d pt3,const Point2d pt4, const Point2d pt5,
-	const Point2d pt6,const Point2d pt7, const Point2d pt8)
+void TDrawChosenLine(Mat& image, const Mat pt1, const Mat pt2,
+	const Mat pt3,const Mat pt4, const Mat pt5,
+	const Mat pt6,const Mat pt7, const Mat pt8)
 {
-	line(image, pt1, pt2, Scalar(0, 0, 255), 2);
-	line(image, pt3, pt4, Scalar(0, 0, 255), 2);
-	line(image, pt1, pt3, Scalar(255, 0, 0), 2);
-	line(image, pt2, pt4, Scalar(255, 0, 0), 2);
-	line(image, pt5, pt6, Scalar(0, 255, 0), 2);
-	line(image, pt7, pt8, Scalar(0, 255, 0), 2);
-}
+	Point2d tpt1(pt1.at<double>(0), pt1.at<double>(1));
+	Point2d tpt2(pt2.at<double>(0), pt2.at<double>(1));
+	Point2d tpt3(pt3.at<double>(0), pt3.at<double>(1));
+	Point2d tpt4(pt4.at<double>(0), pt4.at<double>(1));
+	Point2d tpt5(pt5.at<double>(0), pt5.at<double>(1));
+	Point2d tpt6(pt6.at<double>(0), pt6.at<double>(1));
+	Point2d tpt7(pt7.at<double>(0), pt7.at<double>(1));
+	Point2d tpt8(pt8.at<double>(0), pt8.at<double>(1));
 
-/*------------------------------------------------
- * Function: 
- *		ODrawChosenLine - 1 step method to draw
- *		chosen lines on the original image given
- *		several points
- * Input:
- *		
- * Output:
- *		
- *------------------------------------------------
- */
-
-void ODrawChosenLine(Mat& image, const Point2d pt1, const Point2d pt2,
-	const Point2d pt3, const Point2d pt4, const Point2d pt5, const Point2d pt6,
-	const Point2d pt7, const Point2d pt8, const Point2d pt9, const Point2d pt10,
-	const Point2d pt11, const Point2d pt12, const Point2d pt13, const Point2d pt14,
-	const Point2d pt15, const Point2d pt16)
-{
-	line(image, pt1, pt2, Scalar(0, 0, 255), 2);
-	line(image, pt3, pt4, Scalar(0, 0, 255), 2);
-	line(image, pt5, pt6, Scalar(255, 0, 0), 2);
-	line(image, pt6, pt7, Scalar(255, 0, 0), 2);
-	line(image, pt8, pt9, Scalar(0, 255, 0), 2);
-	line(image, pt9, pt10, Scalar(0, 255, 0), 2);
-	line(image, pt11, pt12, Scalar(255, 255, 0), 2);
-	line(image, pt12, pt13, Scalar(255, 255, 0), 2);
-	line(image, pt14, pt15, Scalar(255, 0, 255), 2);
-	line(image, pt15, pt16, Scalar(255, 0, 255), 2);
+	line(image, tpt1, tpt2, Scalar(0, 0, 255), 2);
+	line(image, tpt3, tpt4, Scalar(0, 0, 255), 2);
+	line(image, tpt1, tpt3, Scalar(255, 0, 0), 2);
+	line(image, tpt2, tpt4, Scalar(255, 0, 0), 2);
+	line(image, tpt5, tpt6, Scalar(0, 255, 0), 2);
+	line(image, tpt7, tpt8, Scalar(0, 255, 0), 2);
 }
 
 /*------------------------------------------------
@@ -311,6 +290,53 @@ Mat affineCorrectH(const Mat Hp, Mat l1, Mat l2, Mat l3, Mat l4)
 }
 
 
+/*------------------------------------------------
+ * Function: 
+ *		ODrawChosenLine - 1 step method to draw
+ *		chosen lines on the original image given
+ *		several points
+ * Input:
+ *		
+ * Output:
+ *		
+ *------------------------------------------------
+ */
+
+void ODrawChosenLine(Mat& image, const Mat pt1, const Mat pt2,
+	const Mat pt3, const Mat pt4, const Mat pt5, const Mat pt6,
+	const Mat pt7, const Mat pt8, const Mat pt9, const Mat pt10,
+	const Mat pt11, const Mat pt12, const Mat pt13, const Mat pt14,
+	const Mat pt15)
+{
+	Point2d tpt1(pt1.at<double>(0), pt1.at<double>(1));
+	Point2d tpt2(pt2.at<double>(0), pt2.at<double>(1));
+	Point2d tpt3(pt3.at<double>(0), pt3.at<double>(1));
+	Point2d tpt4(pt4.at<double>(0), pt4.at<double>(1));
+	Point2d tpt5(pt5.at<double>(0), pt5.at<double>(1));
+	Point2d tpt6(pt6.at<double>(0), pt6.at<double>(1));
+	Point2d tpt7(pt7.at<double>(0), pt7.at<double>(1));
+	Point2d tpt8(pt8.at<double>(0), pt8.at<double>(1));
+	Point2d tpt9(pt9.at<double>(0), pt9.at<double>(1));
+	Point2d tpt10(pt10.at<double>(0), pt10.at<double>(1));
+	Point2d tpt11(pt11.at<double>(0), pt11.at<double>(1));
+	Point2d tpt12(pt12.at<double>(0), pt12.at<double>(1));
+	Point2d tpt13(pt13.at<double>(0), pt13.at<double>(1));
+	Point2d tpt14(pt14.at<double>(0), pt14.at<double>(1));
+	Point2d tpt15(pt15.at<double>(0), pt15.at<double>(1));
+
+	line(image, tpt1, tpt2, Scalar(0, 0, 255), 2);
+	line(image, tpt2, tpt3, Scalar(0, 0, 255), 2);
+	line(image, tpt4, tpt5, Scalar(255, 0, 0), 2);
+	line(image, tpt5, tpt6, Scalar(255, 0, 0), 2);
+	line(image, tpt7, tpt8, Scalar(0, 255, 0), 2);
+	line(image, tpt8, tpt9, Scalar(0, 255, 0), 2);
+	line(image, tpt10, tpt11, Scalar(255, 255, 0), 2);
+	line(image, tpt11, tpt12, Scalar(255, 255, 0), 2);
+	line(image, tpt13, tpt14, Scalar(255, 0, 255), 2);
+	line(image, tpt14, tpt15, Scalar(255, 0, 255), 2);
+}
+
+
 /*---------------------------------------------------
  * Function: 
  *		OneStepH - find the homography transformation  
@@ -361,42 +387,32 @@ Mat OneStepH(Mat l1, Mat l2, Mat l3, Mat l4, Mat l5,
 		l9.at<double>(1,0)*l10.at<double>(1,0), 
 		0.5*(l9.at<double>(0,0)*l10.at<double>(2,0)+l9.at<double>(2,0)*l10.at<double>(0,0)),
 		0.5*(l9.at<double>(1,0)*l10.at<double>(2,0)+l9.at<double>(2,0)*l10.at<double>(1,0))
-	}};
-
+	}
+	};
+	
 	double bdata[5][1] = {
 		{-l1.at<double>(2,0)*l2.at<double>(2,0)},
 		{-l3.at<double>(2,0)*l4.at<double>(2,0)},
 		{-l5.at<double>(2,0)*l6.at<double>(2,0)},
 		{-l7.at<double>(2,0)*l8.at<double>(2,0)},
 		{-l9.at<double>(2,0)*l10.at<double>(2,0)}
-	};
+	};	
 
 	Mat w(5, 5, CV_64F, wdata);
 	Mat b(5, 1, CV_64F, bdata);
-
-	cout << "w: " << w.inv() << endl;
-
-	Mat z = w.inv(DECOMP_SVD)*b;
-
-	cout << "l9: " << l1 << endl;
-	cout << "l10: " << l2 << endl;
-
-	cout << "z: " << z << endl;
-
+	Mat z = w.inv()*b;
+	
 	double Cinfdata[3][3] = {
 		{z.at<double>(0,0), 0.5*z.at<double>(1,0), 0.5*z.at<double>(3,0)},
 		{0.5*z.at<double>(1,0), z.at<double>(2,0), 0.5*z.at<double>(4,0)},
-		{0.5*z.at<double>(3,0), 0.5*z.at<double>(4,0), 1.0}
+		{0.5*z.at<double>(3,0), 0.5*z.at<double>(4,0), 1}
 	};
-
+	
 	Mat Cinf(3, 3, CV_64F, Cinfdata);
 
 	cout << "Cinf: " << Cinf << endl;
 
 	Mat V, D, D2, Vt;
-	SVD::compute(Cinf, D, V, Vt, 0);
-
-	cout << "D: " << D << endl;
 
 	Mat AAt = Cinf(Range(0, 2), Range(0, 2));
 	SVD::compute(AAt, D2, V, Vt, 0);
@@ -406,15 +422,17 @@ Mat OneStepH(Mat l1, Mat l2, Mat l3, Mat l4, Mat l5,
 	sqrt(D2, D);
 	D = Mat::diag(D);
 
-	//cout << "D: " << D << endl;
+	cout << "D: " << D << endl;
 
 	Mat A = V*D*Vt;
+	cout << "A: " << A << endl;
+
 	double rdata[2][1] = {{Cinf.at<double>(0,2)},{Cinf.at<double>(1,2)}};
 	Mat r(2, 1, CV_64F, rdata);
 
 	Mat v;
 	solve(A, r, v, DECOMP_SVD);
-
+	
 	Mat H = Mat::eye(3, 3, CV_64F);
 
 	H.at<double>(0,0) = A.at<double>(0,0);
@@ -431,33 +449,32 @@ Mat OneStepH(Mat l1, Mat l2, Mat l3, Mat l4, Mat l5,
 
 int main()
 {
+	//char* imgName = "Set1/Img1.jpg";
+	//char* dataName = "set1Img1.yml";
+	char* imgName = "Set1/Img2.jpg";
+	char* dataName = "set1Img2.yml";
 
-	char* set1Img1Name = "Set1/Img1.jpg";
-	char* set1Img2Name = "Set1/Img2.jpg";
+	Mat img = imread(imgName);
 
-	Mat set1Img1 = imread(set1Img1Name);
-	//Mat set1Img2 = imread(set1Img2Name)
+	Size frame_size = img.size();
 
-	Point2d pt1(599.0, 201.0);
-	Point2d pt2(669.0, 225.0);
-	Point2d pt3(565.0, 446.0);
-	Point2d pt4(641.0, 438.0);
-	Point2d pt5(603.0, 212.0);
-	Point2d pt6(643.0, 390.0);
-	Point2d pt7(664.0, 233.0);
-	Point2d pt8(579.0, 389.0);
+	Mat x1, x2, x3, x4, x5, x6, x7, x8;
+	FileStorage fs(dataName, CV_STORAGE_READ);
+	if(!fs.isOpened())
+	{
+		cout << "Failed to open data file" << endl;
+		return 0;
+	}
+	fs["x1"] >> x1;
+	fs["x2"] >> x2;
+	fs["x3"] >> x3;
+	fs["x4"] >> x4;
+	fs["x5"] >> x5;
+	fs["x6"] >> x6;
+	fs["x7"] >> x7;
+	fs["x8"] >> x8;
 
-	TDrawChosenLine(set1Img1, pt1, pt2, pt3, pt4, pt5, pt6, pt7, pt8);
-
-	Mat x1 = convert2Homogeneous(pt1);
-	Mat x2 = convert2Homogeneous(pt2);
-	Mat x3 = convert2Homogeneous(pt3);
-	Mat x4 = convert2Homogeneous(pt4);
-	Mat x5 = convert2Homogeneous(pt5);
-	Mat x6 = convert2Homogeneous(pt6);
-	Mat x7 = convert2Homogeneous(pt7);
-	Mat x8 = convert2Homogeneous(pt8);
-
+	TDrawChosenLine(img, x1, x2, x3, x4, x5, x6, x7, x8);
 	
 	Mat l1 = constructLine(x1, x2);
 	Mat l2 = constructLine(x3, x4);
@@ -473,101 +490,79 @@ int main()
 
 	Mat Hp = projectCorrectH(VL);
 
-	Size frame_size = set1Img1.size();
+	cout << "Hp: " << Hp << endl;
 	
-	Mat set1Img1_corrected, set1Img1_corrected2;
+	Mat imgProjCorrected, imgAffineCorrected;
 
-	imageBackProj(set1Img1, set1Img1_corrected, frame_size, Hp);
+	imageBackProj(img, imgProjCorrected, frame_size, Hp);
 
 	Mat Ha = affineCorrectH(Hp, l1, l3, l5, l6);
 
-	cout << "l1: " << l1 << endl;
-	cout << "l5: " << l5 << endl;
+	cout << "Ha: " << Ha << endl;
 
-	imageBackProj(set1Img1, set1Img1_corrected2, frame_size, Ha.inv()*Hp); 
+	imageBackProj(img, imgAffineCorrected, frame_size, Ha.inv()*Hp); 
 
-	namedWindow("TwoStep_set1Img1", WINDOW_AUTOSIZE);
-	namedWindow("TwoStep_set1Img1_final", WINDOW_AUTOSIZE);
-	imshow("TwoStep_set1Img1", set1Img1_corrected);
-	imshow("TwoStep_set1Img1_final", set1Img1_corrected2);
-
+	namedWindow("TwoStep_Img", WINDOW_AUTOSIZE);
+	namedWindow("TwoStep_Img_final", WINDOW_AUTOSIZE);
+	imshow("TwoStep_Img", imgProjCorrected);
+	imshow("TwoStep_Img_final", imgAffineCorrected);
+	imwrite("result1.jpg", imgProjCorrected);
+	imwrite("result2.jpg", imgAffineCorrected);
+	
 
 	/*----------------------------
-	 * First Step Method
+	 * One Step Method
 	 *----------------------------
 	 */
 
+	
+	img = imread(imgName);
 
-	set1Img1 = imread(set1Img1Name);
+	Mat ox1, ox2, ox3, ox4, ox5, ox6, ox7, ox8, ox9, ox10, ox11, ox12, ox13, ox14, ox15;
 
-	//5 pairs of lines data 
+	fs["ox1"] >> ox1;
+	fs["ox2"] >> ox2;
+	fs["ox3"] >> ox3;
+	fs["ox4"] >> ox4;
+	fs["ox5"] >> ox5;
+	fs["ox6"] >> ox6;
+	fs["ox7"] >> ox7;
+	fs["ox8"] >> ox8;
+	fs["ox9"] >> ox9;
+	fs["ox10"] >> ox10;
+	fs["ox11"] >> ox11;
+	fs["ox12"] >> ox12;
+	fs["ox13"] >> ox13;
+	fs["ox14"] >> ox14;
+	fs["ox15"] >> ox15;
 
-	Point2d opt1(603.0, 212.0);
-	Point2d opt2(643.0, 390.0);
-	Point2d opt3(664.0, 233.0);
-	Point2d opt4(579.0, 389.0);
-
-	Point2d opt5(599.0, 201.0);
-	Point2d opt6(565.0, 446.0);
-	Point2d opt7(641.0, 438.0);
-
-	Point2d opt8(283.0, 12.0);
-	Point2d opt9(511.0, 113.0);
-	Point2d opt10(473.0, 394.0);
-
-	Point2d opt11(322.0, 93.0);
-	//Point2d opt12(271.0, 454.0);
-	Point2d opt12(470.0, 148.0);
-	Point2d opt13(431.0, 440.0);
-
-	Point2d opt14(696.0, 235.0);
-	Point2d opt15(670.0, 434.0);
-	Point2d opt16(722.0, 429.0);
-
-	//Draw Chosen five pairs of lines
-	ODrawChosenLine(set1Img1, opt1, opt2, opt3, opt4, opt5, opt6, opt7, opt8, opt9, opt10, opt11, opt12, opt13, opt14, opt15, opt16);
-
-	Mat ox1 = convert2Homogeneous(opt1);
-	Mat ox2 = convert2Homogeneous(opt2);
-	Mat ox3 = convert2Homogeneous(opt3);
-	Mat ox4 = convert2Homogeneous(opt4);
-	Mat ox5 = convert2Homogeneous(opt5);
-	Mat ox6 = convert2Homogeneous(opt6);
-	Mat ox7 = convert2Homogeneous(opt7);
-	Mat ox8 = convert2Homogeneous(opt8);
-	Mat ox9 = convert2Homogeneous(opt9);
-	Mat ox10 = convert2Homogeneous(opt10);
-	Mat ox11 = convert2Homogeneous(opt11);
-	Mat ox12 = convert2Homogeneous(opt12);
-	Mat ox13 = convert2Homogeneous(opt13);
-	Mat ox14 = convert2Homogeneous(opt14);
-	Mat ox15 = convert2Homogeneous(opt15);
-	Mat ox16 = convert2Homogeneous(opt16);
+	ODrawChosenLine(img, ox1, ox2, ox3, ox4, ox5, ox6, ox7, ox8, ox9, ox10, ox11, ox12, ox13, ox14, ox15);
 
 	Mat ol1 = constructLine(ox1, ox2);
-	Mat ol2 = constructLine(ox3, ox4);
-	Mat ol3 = constructLine(ox5, ox6);
-	Mat ol4 = constructLine(ox6, ox7);
-	Mat ol5 = constructLine(ox8, ox9);
-	Mat ol6 = constructLine(ox9, ox10);
-	Mat ol7 = constructLine(ox11, ox12);
-	Mat ol8 = constructLine(ox12, ox13);
-	Mat ol9 = constructLine(ox14, ox15);
-	Mat ol10 = constructLine(ox15, ox16);
+	Mat ol2 = constructLine(ox2, ox3);
+	Mat ol3 = constructLine(ox4, ox5);
+	Mat ol4 = constructLine(ox5, ox6);
+	Mat ol5 = constructLine(ox7, ox8);
+	Mat ol6 = constructLine(ox8, ox9);
+	Mat ol7 = constructLine(ox10, ox11);
+	Mat ol8 = constructLine(ox11, ox12);
+	Mat ol9 = constructLine(ox13, ox14);
+	Mat ol10 = constructLine(ox14, ox15);
 	
 	Mat H = OneStepH(ol1, ol2, ol3, ol4, ol5, 
 		ol6, ol7, ol8, ol9, ol10);
 
-	Mat set1Img1_corrected3;
-	imageBackProj(set1Img1, set1Img1_corrected3, frame_size, H.inv());
+	cout << "H: " << H << endl;
 
-	cout << "H inverse 1: " << Ha.inv()*Hp << endl;
-	cout << "H inverse 2: " << H.inv() << endl;
+	Mat imgOneCorrected;
+	imageBackProj(img, imgOneCorrected, frame_size, H.inv());
 
-	namedWindow("OneStep_set1Img1", WINDOW_AUTOSIZE);
-	imshow("OneStep_set1Img1", set1Img1_corrected3);
+	namedWindow("OneStep_Img", WINDOW_AUTOSIZE);
+	imshow("OneStep_Img", imgOneCorrected);
+	imwrite("result3.jpg", imgOneCorrected);
 
 	waitKey(0);
+	fs.release();
 
 	return 0;
 }

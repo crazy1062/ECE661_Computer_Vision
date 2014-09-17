@@ -1,0 +1,116 @@
+%YAML:1.0
+x1: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 413, 171, 1 ]
+x2: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 514, 151, 1 ]
+x3: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 427, 394, 1 ]
+x4: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 527, 408, 1 ]
+x5: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 427, 192, 1 ]
+x6: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 507, 333, 1 ]
+x7: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 498, 180, 1 ]
+x8: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 435, 329, 1 ]
+ox1: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 375, 180, 1 ]
+ox2: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 388, 390, 1 ]
+ox3: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 320, 379, 1 ]
+ox4: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 570, 141, 1 ]
+ox5: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 729, 111, 1 ]
+ox6: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 740, 439, 1 ]
+ox7: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 729, 111, 1 ]
+ox8: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 740, 439, 1 ]
+ox9: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 583, 416, 1 ]
+ox10: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 740, 439, 1 ]
+ox11: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 583, 416, 1 ]
+ox12: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 570, 141, 1 ]
+ox13: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 583, 416, 1 ]
+ox14: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 570, 141, 1 ]
+ox15: !!opencv-matrix
+   rows: 3
+   cols: 1
+   dt: d
+   data: [ 729, 111, 1 ]
