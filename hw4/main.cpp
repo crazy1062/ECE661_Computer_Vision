@@ -8,17 +8,19 @@ using namespace std;
 using namespace cv;
 
 #define KAPA 0.04
-#define MAXPT 50
-#define SCALE 2
-#define HARRISTHRESH 8e+8
-#define HARRISWIN 7
-#define NONMAXWIN 7
-#define NCCTHRESH 0.7
+#define MAXPT 100
+#define SCALE 1
+#define HARRISTHRESH 2e+12
+#define HARRISTHRESH2 4e+12
+#define HAARWIN 6
+#define HARRISWIN 5
+#define NONMAXWIN 15
+#define NCCTHRESH 0.5
 #define NCCRATIO 0.7
-#define NCCWIN 15
-#define SSDTHRESH 50
+#define NCCWIN 41
+#define SSDTHRESH 10000
 #define SSDRATIO 0.7
-#define SSDWIN 15
+#define SSDWIN 43
 
 struct descriptor{
 	int index;
@@ -33,7 +35,7 @@ struct pointPair{
 
 Mat getWindow(const Mat& img, Point pt, int win_size);
 void nonMaxSup(Mat& corner_s, int win_size);
-Mat scaleHarris(const Mat& image, double scale, int win_size, int sup_win_size);
+Mat scaleHarris(Mat& image, double scale, int win_size, int sup_win_size, int haar_win_size);
 void featureExtract(descriptor& dcrip, const Mat& corner_s, double thresh, const Mat& image, int win_size);
 void NCC(const descriptor& dcrip1, const descriptor& dcrip2, double thresh, double ratio_thresh, vector<pointPair>& pair, int win_size);
 void SSD(const descriptor& dcrip1, const descriptor& dcrip2, double thresh, double ratio_thresh, vector<pointPair>& pair, int win_size);
@@ -58,33 +60,101 @@ void drawPoints(Mat& img, const Mat& corner_s, double thresh, double scale, int 
  *-------------------------------------------------
  */
 
-Mat scaleHarris(const Mat& image, double scale, int win_size, int sup_win_size)
+Mat scaleHarris(Mat& image, double scale, int win_size, int sup_win_size, int haar_win_size)
 {
 	Mat Ix, Iy, Ix2, Iy2, Ixy;
 	Size size = image.size();
 	int ddepth = -1;
 
-	Sobel(image, Ix, CV_64FC1, 1, 0, 3);
-	Sobel(image, Iy, CV_64FC1, 0, 1, 3);
+	GaussianBlur(image, image, Size(win_size,win_size), scale, 0);
+
+	Mat tmpknlp = Mat::ones(win_size+1, (win_size+1)/2, CV_64FC1);
+	Mat tmpknln = -1*tmpknlp;
+
+	Mat kernelx, kernely;
+	hconcat(tmpknln, tmpknlp, kernelx);
+	vconcat(tmpknlp.t(), tmpknln.t(), kernely);
+
+	cout << "kernelx" << kernelx << endl;
+	cout << "kernely" << kernely << endl;
+
+	filter2D(image, Ix, CV_64FC1, kernelx);
+	filter2D(image, Iy, CV_64FC1, kernely);
+	//Sobel(image, Ix, CV_64FC1, 1, 0, 3);
+	//Sobel(image, Iy, CV_64FC1, 0, 1, 3);
+	//Scharr(image, Ix, CV_64FC1, 1, 0);
+	//Scharr(image, Iy, CV_64FC1, 0, 1);
+	
 
 	Mat cov(size, CV_64FC3);
 	Mat corner_strength(size, CV_64FC1);
-
+	Mat corner_strength2(size, CV_64FC1);
+	/*
 	Ix2 = Ix.mul(Ix);
 	Iy2 = Iy.mul(Iy);
 	Ixy = Ix.mul(Iy);
 
-	GaussianBlur(Ix2, Ix2, Size(win_size,win_size), scale, 0);
-	GaussianBlur(Iy2, Iy2, Size(win_size,win_size), scale, 0);
-	GaussianBlur(Ixy, Ixy, Size(win_size,win_size), scale, 0);
+	//GaussianBlur(Ix2, Ix2, Size(win_size,win_size), scale, 0);
+	//GaussianBlur(Iy2, Iy2, Size(win_size,win_size), scale, 0);
+	//GaussianBlur(Ixy, Ixy, Size(win_size,win_size), scale, 0);
+	boxFilter(Ix2, Ix2, -1, Size(win_size, win_size));
+	boxFilter(Iy2, Iy2, -1, Size(win_size, win_size));
+	boxFilter(Ixy, Ixy, -1, Size(win_size, win_size));
 
 	Mat Ixy_sum = Ix2 + Iy2;
 
 	corner_strength = (Ix2.mul(Iy2) - Ixy.mul(Ixy)) - KAPA*Ixy_sum.mul(Ixy_sum);
+	GaussianBlur(corner_strength, corner_strength, Size(win_size, win_size), scale, 0);
+	imshow("corner_strength: ", corner_strength);
+	
+	Mat temp;
 
-	nonMaxSup(corner_strength, sup_win_size);
+	for(int i = 0; i < corner_strength.cols; i++)
+	{
+		for(int j = 0; j < corner_strength.rows; j++)
+		{
+			temp = getWindow(corner_strength, Point(i,j), win_size);
+			corner_strength2.at<double>(j,i) = (double)sum(temp).val[0]/win_size;
+		}
+	}
+	*/
 
-	return corner_strength;
+	Mat temp;
+
+	for(int i = 0; i < size.height; i++)
+	{
+		double* cov_data = (double*)(cov.data + i*cov.step);
+		const double* dxdata = (const double*)(Ix.data + i*Ix.step);
+		const double* dydata = (const double*)(Iy.data + i*Iy.step);
+		for(int j = 0; j < size.width; j++)
+		{
+			double dx = dxdata[j];
+			double dy = dydata[j];
+
+			cov_data[j*3] = dx*dx;
+			cov_data[j*3+1] = dx*dy;
+			cov_data[j*3+2] = dy*dy;
+		}
+	}
+
+	double norm = (double)1/(win_size*win_size);
+	cout << "norm: " << norm << endl;
+
+	for(int i = 0; i < corner_strength.cols; i++)
+	{
+		for(int j = 0; j < corner_strength.rows; j++)
+		{
+			temp = getWindow(cov, Point(i,j), win_size);
+			double sumdx2 = sum(temp).val[0];
+			double sumdxy = sum(temp).val[1];
+			double sumdy2 = sum(temp).val[2];
+			corner_strength2.at<double>(j,i) = (double)norm*(sumdx2*sumdy2 - sumdxy*sumdxy - KAPA*(sumdx2 + sumdy2)*(sumdx2 + sumdy2));
+		}
+	}
+
+	nonMaxSup(corner_strength2, sup_win_size);
+
+	return corner_strength2;
 }
 
 /*------------------------------------------------
@@ -130,6 +200,7 @@ Mat getWindow(const Mat& img, Point pt, int win_size)
 	if(y_end > img_y) y_end = img_y;
 
 	win = img(Range(y_start, y_end), Range(x_start, x_end));
+	win.convertTo(win, CV_64FC1);
 
 	return win;
 }
@@ -212,6 +283,7 @@ void featureExtract(descriptor& dcrip, const Mat& corner_s, double thresh, const
 			}
 		}
 	}
+	cout << "number of corners: " << count << endl;
 }
 
 /*------------------------------------------------
@@ -233,32 +305,43 @@ void featureExtract(descriptor& dcrip, const Mat& corner_s, double thresh, const
  */
 
 void NCC(const descriptor& dcrip1, const descriptor& dcrip2, double thresh, double ratio_thresh, vector<pointPair>& pair, int win_size)
-{
-	Mat avg1Mat, avg2Mat, C1, C2, C; 
+{ 
 	Scalar avg1, avg2;
 	int i, j;
 	double NCCval, ratio;
 	Size size = Size(win_size, win_size);
+	Mat avg1Mat(size, CV_64FC1), avg2Mat(size, CV_64FC1), C1(size, CV_64FC1), C2(size, CV_64FC1), C(size, CV_64FC1);
 	cout << "size: " << size << endl;
 	for(i = 0; i < dcrip1.index; i++)
 	{
 		double maxVal = 0, secondMax = 0;
 		pointPair tmpPair = {Point(0,0), Point(0,0)};
-		cout << "dcrip1 size: " << dcrip1.win[i].size() << endl;
+		//cout << "dcrip1 size: " << dcrip1.win[i].size() << endl;
 		if(dcrip1.win[i].size() != size) continue;
 		for(j = 0; j < dcrip2.index; j++)
 		{
 			if(dcrip2.win[j].size() != size) continue;
 
+			//cout << "dcrip1.win[i]: " << dcrip1.win[i] << endl;
+			//cout << "dcrip2.win[j]: " << dcrip2.win[j] << endl;
 			avg1 = mean(dcrip1.win[i]);
 			avg2 = mean(dcrip2.win[j]);
+			//cout << "avg1: " << avg1 << endl;
+			//cout << "avg2: " << avg2 << endl;
 			subtract(dcrip1.win[i], avg1, avg1Mat);
 			subtract(dcrip2.win[j], avg2, avg2Mat);
+			//cout << "avg1Mat: " << avg1Mat << endl;
+			//cout << "avg2Mat: " << avg2Mat << endl;
 			C = avg1Mat.mul(avg2Mat);
 			C1 = avg1Mat.mul(avg1Mat);
 			C2 = avg2Mat.mul(avg2Mat);
+			//cout << "C: " << C << endl;
+			//cout << "C1: " << C1 << endl;
+			//cout << "C2: " << C2 << endl;
 
 			NCCval = sum(C).val[0]/sqrt(sum(C1).val[0]*sum(C2).val[0]);
+
+			//cout << "sum(C).val[0]: " << sum(C).val[0] << endl;
 
 			if(NCCval > thresh)
 			{
@@ -270,7 +353,7 @@ void NCC(const descriptor& dcrip1, const descriptor& dcrip2, double thresh, doub
 				}
 			}
 		}
-		cout << maxVal << endl;
+		//cout << maxVal << endl;
 		ratio = secondMax/maxVal;
 		if(ratio < ratio_thresh )
 		{
@@ -299,25 +382,31 @@ void NCC(const descriptor& dcrip1, const descriptor& dcrip2, double thresh, doub
 
 void SSD(const descriptor& dcrip1, const descriptor& dcrip2, double thresh, double ratio_thresh, vector<pointPair>& pair, int win_size)
 {
-	Mat I, I2;
 	int i, j;
 	Size size = Size(win_size, win_size);
+	Mat I(size, CV_64FC1), I2(size, CV_64FC1);
+	cout << "size: " << size << endl;
 	double SSDval, ratio;
 	for(i = 0; i < dcrip1.index; i++)
 	{
 		double minVal = 1e+10, secondMin = 1e+10;
-		pointPair tmpPair = {Point(0,0), Point(0,0)};
+		pointPair tmpPair = { Point(0,0), Point(0,0)};
 		if(dcrip1.win[i].size() != size) continue;
 		for(j = 0; j < dcrip2.index; j++)
 		{
 			if(dcrip2.win[j].size() != size) continue;
 
+			//cout << "dcrip1.win[i]: " << dcrip1.win[i] << endl;
+			//cout << "dcrip2.win[j]: " << dcrip2.win[j] << endl;
 			subtract(dcrip1.win[i], dcrip2.win[j], I);
+			//cout << "I: " << I << endl;
 			I2 = I.mul(I);
-			SSDval = sum(I2).val[0]/(win_size*win_size);
-			cout << "SSDval: " << SSDval << endl;
+			//cout << "I2: " << I2 << endl;
+			SSDval = (double)sum(I2).val[0]/(win_size*win_size);
+			//cout << "sum(I2): " << sum(I2).val[0] << endl;
+			//cout << "SSDval: " << SSDval << endl;
 
-			if(SSDval > thresh)
+			if(SSDval < thresh)
 			{
 				if(SSDval < minVal){
 					secondMin = minVal;
@@ -327,8 +416,11 @@ void SSD(const descriptor& dcrip1, const descriptor& dcrip2, double thresh, doub
 				}
 			}
 		}
+		//cout << "minVal: " << minVal << endl;
+		//cout << "secondMin: " << secondMin << endl;
 
 		ratio = minVal/secondMin;
+		cout << "ratio: " << ratio << endl;
 		if(ratio < ratio_thresh )
 		{
 			pair.push_back(tmpPair);
@@ -380,7 +472,7 @@ void drawPairs(const Mat& img1, const Mat& img2, Mat& imgOut, vector<pointPair>&
 
 void drawPoints(Mat& img, const Mat& corner_s, double thresh, double scale, int win_size)
 {
-	GaussianBlur(img, img, Size(win_size,win_size), scale, 0);
+	//GaussianBlur(img, img, Size(win_size,win_size), scale, 0);
 
 	for(int j = 0; j < corner_s.rows; j++)
 	{
@@ -397,10 +489,10 @@ void drawPoints(Mat& img, const Mat& corner_s, double thresh, double scale, int 
 
 int main(){
 
-	char* img_name1 = "pic1.jpg";
-	char* img_name2 = "pic2.jpg";
-	//char* img_name1 = "pic6.jpg";
-	//char* img_name2 = "pic7.jpg";
+	//char* img_name1 = "pic1.jpg";
+	//char* img_name2 = "pic2.jpg";
+	char* img_name1 = "pic6.jpg";
+	char* img_name2 = "pic7.jpg";
 
 	Mat src, src_gray;
 	Mat img1, img2;
@@ -412,13 +504,15 @@ int main(){
 
 	Size img_size = img1.size();
 	
-	imshow("img1", img1);
-	imshow("img2", img2);
+	
 
 	Point2d p(10,0);
 	
-	Mat corner_s1 = scaleHarris(img1, SCALE, HARRISWIN, NONMAXWIN);
-	Mat corner_s2 = scaleHarris(img2, SCALE, HARRISWIN, NONMAXWIN);
+	Mat corner_s1 = scaleHarris(img1, SCALE, HARRISWIN, NONMAXWIN, HAARWIN);
+	Mat corner_s2 = scaleHarris(img2, SCALE, HARRISWIN, NONMAXWIN, HAARWIN);
+
+	imshow("img1", img1);
+	imshow("img2", img2);
 
 	descriptor dcrip1;
 	descriptor dcrip2;
@@ -426,11 +520,11 @@ int main(){
 	vector<pointPair> pair;
 	vector<pointPair> pair2;
 
-	featureExtract(dcrip1, corner_s1, HARRISTHRESH, img1, NCCWIN);
-	featureExtract(dcrip2, corner_s2, HARRISTHRESH, img2, NCCWIN);
-	NCC(dcrip1, dcrip2, NCCTHRESH, NCCRATIO, pair, NCCWIN);
+	//featureExtract(dcrip1, corner_s1, HARRISTHRESH, img1, NCCWIN);
+	//featureExtract(dcrip2, corner_s2, HARRISTHRESH2, img2, NCCWIN);
+	//NCC(dcrip1, dcrip2, NCCTHRESH, NCCRATIO, pair, NCCWIN);
 	featureExtract(dcrip1, corner_s1, HARRISTHRESH, img1, SSDWIN);
-	featureExtract(dcrip2, corner_s2, HARRISTHRESH, img2, SSDWIN);
+	featureExtract(dcrip2, corner_s2, HARRISTHRESH2, img2, SSDWIN);
 	SSD(dcrip1, dcrip2, SSDTHRESH, SSDRATIO, pair2, SSDWIN);
 
 	cout << "pair size: " << pair.size() << endl;
@@ -438,21 +532,21 @@ int main(){
 
 	drawPoints(img1, corner_s1, HARRISTHRESH, SCALE, HARRISWIN);
 	
-	drawPoints(img2, corner_s2, HARRISTHRESH, SCALE, HARRISWIN);
+	drawPoints(img2, corner_s2, HARRISTHRESH2, SCALE, HARRISWIN);
 
 	namedWindow( "corners_window1", CV_WINDOW_AUTOSIZE );
 	imshow( "corners_window1", img1 );
 	namedWindow( "corners_window2", CV_WINDOW_AUTOSIZE );
 	imshow( "corners_window2", img2 );
 
-	Mat dst(Size(img_size.width*2, img_size.height), img1.type());
+	//Mat dst(Size(img_size.width*2, img_size.height), img1.type());
 	Mat dst2(Size(img_size.width*2, img_size.height), img1.type());
 
-	drawPairs(img1, img2, dst, pair);
+	//drawPairs(img1, img2, dst, pair);
 	drawPairs(img1, img2, dst2, pair2);
 
-	namedWindow("corner pairs NCC", CV_WINDOW_AUTOSIZE);
-	imshow("corner pairs NCC", dst);
+	//namedWindow("corner pairs NCC", CV_WINDOW_AUTOSIZE);
+	//imshow("corner pairs NCC", dst);
 	namedWindow("corner pairs SSD", CV_WINDOW_AUTOSIZE);
 	imshow("corner pairs SSD", dst2);
 
