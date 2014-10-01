@@ -474,13 +474,14 @@ int main()
 	 */
 
 
-	char* img_name1 = "pic1.jpg";
-	char* img_name2 = "pic2.jpg";
+	//char* img_name1 = "pic1.jpg";
+	//char* img_name2 = "pic2.jpg";
 	//char* img_name1 = "pic6.jpg";
 	//char* img_name2 = "pic7.jpg";
-	//char* img_name1 = "pic8.jpg";
-	//char* img_name2 = "pic9.jpg";
+	char* img_name1 = "pic8.jpg";
+	char* img_name2 = "pic9.jpg";
 
+	
 	Mat src, src_gray;
 	Mat img1, img2;
 
@@ -539,7 +540,7 @@ int main()
 	namedWindow("corner pairs SSD", CV_WINDOW_AUTOSIZE);
 	imshow("corner pairs SSD", dst2);
 	imwrite("SSDresult.jpg", dst2);
-
+	
 	
 
 	/*-----------------------------------------------------------
@@ -578,7 +579,8 @@ int main()
 	extractor.compute(img_scene, keypoints_scene, descriptors_scene);
 
 	//-- Step 3: Matching descriptor vectors using FLANN matcher
-	FlannBasedMatcher matcher;
+	BFMatcher matcher(NORM_L2);
+	//FlannBasedMatcher matcher;
 	vector<DMatch> matches;
 	matcher.match(descriptors_object, descriptors_scene, matches);
 
@@ -606,6 +608,7 @@ int main()
 		}
 	}
 
+	cout << "good matches: " << good_matches.size() << endl;
 	Mat img_matches;
 	drawMatches(img_object, keypoints_object, img_scene, keypoints_scene,
                good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
