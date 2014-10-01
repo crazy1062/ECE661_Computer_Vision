@@ -9,15 +9,15 @@ using namespace cv;
 
 #define KAPA 0.04
 #define MAXPT 100
-#define SCALE 1
-#define HARRISTHRESH 2e+12
-#define HARRISTHRESH2 4e+12
-#define HAARWIN 6
-#define HARRISWIN 5
+#define SCALE 0.5
+#define HARRISTHRESH 5e+10
+#define HARRISTHRESH2 5e+10
+#define HAARWIN 4
+#define HARRISWIN 3
 #define NONMAXWIN 15
 #define NCCTHRESH 0.5
-#define NCCRATIO 0.7
-#define NCCWIN 41
+#define NCCRATIO 0.73
+#define NCCWIN 45
 #define SSDTHRESH 10000
 #define SSDRATIO 0.7
 #define SSDWIN 43
@@ -55,19 +55,24 @@ void drawPoints(Mat& img, const Mat& corner_s, double thresh, double scale, int 
  *		the corner area
  *		sup_win_size: non maximum suppression area 
  *		window size
+ *		haar_win_size: haar filter window size
  * Output:
  *		return Mat corner strength
+ *		Mat image
  *-------------------------------------------------
  */
 
 Mat scaleHarris(Mat& image, double scale, int win_size, int sup_win_size, int haar_win_size)
 {
-	Mat Ix, Iy, Ix2, Iy2, Ixy;
+	Mat Ix, Iy;
 	Size size = image.size();
-	int ddepth = -1;
 
+	// define the different scale of the scale space
+	cout << "Blurring the image..." << endl;
 	GaussianBlur(image, image, Size(win_size,win_size), scale, 0);
 
+	// use haar filter to calculate the dx, dy
+	cout << "Creating the haar filter..." << endl;
 	Mat tmpknlp = Mat::ones(win_size+1, (win_size+1)/2, CV_64FC1);
 	Mat tmpknln = -1*tmpknlp;
 
@@ -75,52 +80,20 @@ Mat scaleHarris(Mat& image, double scale, int win_size, int sup_win_size, int ha
 	hconcat(tmpknln, tmpknlp, kernelx);
 	vconcat(tmpknlp.t(), tmpknln.t(), kernely);
 
-	cout << "kernelx" << kernelx << endl;
-	cout << "kernely" << kernely << endl;
-
 	filter2D(image, Ix, CV_64FC1, kernelx);
 	filter2D(image, Iy, CV_64FC1, kernely);
 	//Sobel(image, Ix, CV_64FC1, 1, 0, 3);
 	//Sobel(image, Iy, CV_64FC1, 0, 1, 3);
 	//Scharr(image, Ix, CV_64FC1, 1, 0);
 	//Scharr(image, Iy, CV_64FC1, 0, 1);
-	
 
+	cout << "Calculating the corner strength..." << endl;
 	Mat cov(size, CV_64FC3);
 	Mat corner_strength(size, CV_64FC1);
-	Mat corner_strength2(size, CV_64FC1);
-	/*
-	Ix2 = Ix.mul(Ix);
-	Iy2 = Iy.mul(Iy);
-	Ixy = Ix.mul(Iy);
-
-	//GaussianBlur(Ix2, Ix2, Size(win_size,win_size), scale, 0);
-	//GaussianBlur(Iy2, Iy2, Size(win_size,win_size), scale, 0);
-	//GaussianBlur(Ixy, Ixy, Size(win_size,win_size), scale, 0);
-	boxFilter(Ix2, Ix2, -1, Size(win_size, win_size));
-	boxFilter(Iy2, Iy2, -1, Size(win_size, win_size));
-	boxFilter(Ixy, Ixy, -1, Size(win_size, win_size));
-
-	Mat Ixy_sum = Ix2 + Iy2;
-
-	corner_strength = (Ix2.mul(Iy2) - Ixy.mul(Ixy)) - KAPA*Ixy_sum.mul(Ixy_sum);
-	GaussianBlur(corner_strength, corner_strength, Size(win_size, win_size), scale, 0);
-	imshow("corner_strength: ", corner_strength);
-	
-	Mat temp;
-
-	for(int i = 0; i < corner_strength.cols; i++)
-	{
-		for(int j = 0; j < corner_strength.rows; j++)
-		{
-			temp = getWindow(corner_strength, Point(i,j), win_size);
-			corner_strength2.at<double>(j,i) = (double)sum(temp).val[0]/win_size;
-		}
-	}
-	*/
 
 	Mat temp;
 
+	// store dx2, dy2, dxdy in a 3 channel matrix
 	for(int i = 0; i < size.height; i++)
 	{
 		double* cov_data = (double*)(cov.data + i*cov.step);
@@ -137,9 +110,10 @@ Mat scaleHarris(Mat& image, double scale, int win_size, int sup_win_size, int ha
 		}
 	}
 
+	// normalization factor
 	double norm = (double)1/(win_size*win_size);
-	cout << "norm: " << norm << endl;
 
+	// calculate the corner strength
 	for(int i = 0; i < corner_strength.cols; i++)
 	{
 		for(int j = 0; j < corner_strength.rows; j++)
@@ -148,13 +122,16 @@ Mat scaleHarris(Mat& image, double scale, int win_size, int sup_win_size, int ha
 			double sumdx2 = sum(temp).val[0];
 			double sumdxy = sum(temp).val[1];
 			double sumdy2 = sum(temp).val[2];
-			corner_strength2.at<double>(j,i) = (double)norm*(sumdx2*sumdy2 - sumdxy*sumdxy - KAPA*(sumdx2 + sumdy2)*(sumdx2 + sumdy2));
+			corner_strength.at<double>(j,i) = (double)norm*(sumdx2*sumdy2 - sumdxy*sumdxy - KAPA*(sumdx2 + sumdy2)*(sumdx2 + sumdy2));
 		}
 	}
 
-	nonMaxSup(corner_strength2, sup_win_size);
+	// Non Maximum Suppression
+	cout << "Non Maximum Suppression Process..." << endl;
+	nonMaxSup(corner_strength, sup_win_size);
+	cout << "Corner strength processing completed." << endl;
 
-	return corner_strength2;
+	return corner_strength;
 }
 
 /*------------------------------------------------
@@ -234,6 +211,7 @@ void nonMaxSup(Mat& corner_s, int win_size)
 			int slideWidth = slideWinSize.width;
 			int slideHeight = slideWinSize.height;
 			
+			// set interest point to zero if smaller than any other value in the window
 			for(int k = 0; k < slideWidth; k++)
 			{
 				for(int l = 0; l < slideHeight; l++)
@@ -273,6 +251,7 @@ void featureExtract(descriptor& dcrip, const Mat& corner_s, double thresh, const
 	{
 		for(j = 0; j < height; j++)
 		{
+			// concern about the points stronger than the threshold
 			if(corner_s.at<double>(j,i) > thresh)
 			{
 				if(count > MAXPT - 1) break;
@@ -310,39 +289,33 @@ void NCC(const descriptor& dcrip1, const descriptor& dcrip2, double thresh, doub
 	int i, j;
 	double NCCval, ratio;
 	Size size = Size(win_size, win_size);
-	Mat avg1Mat(size, CV_64FC1), avg2Mat(size, CV_64FC1), C1(size, CV_64FC1), C2(size, CV_64FC1), C(size, CV_64FC1);
-	cout << "size: " << size << endl;
+	Mat avg1Mat, avg2Mat, C1, C2, C;
+	cout << "Using NCC method to find matching points..." << endl;
+
 	for(i = 0; i < dcrip1.index; i++)
 	{
+		// initialize the max value, the second max value
 		double maxVal = 0, secondMax = 0;
+		// initialize the pointPair
 		pointPair tmpPair = {Point(0,0), Point(0,0)};
-		//cout << "dcrip1 size: " << dcrip1.win[i].size() << endl;
 		if(dcrip1.win[i].size() != size) continue;
 		for(j = 0; j < dcrip2.index; j++)
 		{
 			if(dcrip2.win[j].size() != size) continue;
 
-			//cout << "dcrip1.win[i]: " << dcrip1.win[i] << endl;
-			//cout << "dcrip2.win[j]: " << dcrip2.win[j] << endl;
+			// calculate the C matrix
 			avg1 = mean(dcrip1.win[i]);
 			avg2 = mean(dcrip2.win[j]);
-			//cout << "avg1: " << avg1 << endl;
-			//cout << "avg2: " << avg2 << endl;
 			subtract(dcrip1.win[i], avg1, avg1Mat);
 			subtract(dcrip2.win[j], avg2, avg2Mat);
-			//cout << "avg1Mat: " << avg1Mat << endl;
-			//cout << "avg2Mat: " << avg2Mat << endl;
 			C = avg1Mat.mul(avg2Mat);
 			C1 = avg1Mat.mul(avg1Mat);
 			C2 = avg2Mat.mul(avg2Mat);
-			//cout << "C: " << C << endl;
-			//cout << "C1: " << C1 << endl;
-			//cout << "C2: " << C2 << endl;
 
-			NCCval = sum(C).val[0]/sqrt(sum(C1).val[0]*sum(C2).val[0]);
+			// calculate the NCC method value
+			NCCval = (double)sum(C).val[0]/sqrt(sum(C1).val[0]*sum(C2).val[0]);
 
-			//cout << "sum(C).val[0]: " << sum(C).val[0] << endl;
-
+			// find the most suitable point
 			if(NCCval > thresh)
 			{
 				if(NCCval > maxVal){
@@ -353,7 +326,8 @@ void NCC(const descriptor& dcrip1, const descriptor& dcrip2, double thresh, doub
 				}
 			}
 		}
-		//cout << maxVal << endl;
+		
+		// avoid multiple to one pairs
 		ratio = secondMax/maxVal;
 		if(ratio < ratio_thresh )
 		{
@@ -384,28 +358,29 @@ void SSD(const descriptor& dcrip1, const descriptor& dcrip2, double thresh, doub
 {
 	int i, j;
 	Size size = Size(win_size, win_size);
-	Mat I(size, CV_64FC1), I2(size, CV_64FC1);
-	cout << "size: " << size << endl;
+	Mat I, I2;
 	double SSDval, ratio;
+	cout << "Using SSD method to find matching points..." << endl;
+
 	for(i = 0; i < dcrip1.index; i++)
 	{
+		// initialize the min value, the second min value
 		double minVal = 1e+10, secondMin = 1e+10;
+		// initialize the pointPair
 		pointPair tmpPair = { Point(0,0), Point(0,0)};
 		if(dcrip1.win[i].size() != size) continue;
 		for(j = 0; j < dcrip2.index; j++)
 		{
 			if(dcrip2.win[j].size() != size) continue;
-
-			//cout << "dcrip1.win[i]: " << dcrip1.win[i] << endl;
-			//cout << "dcrip2.win[j]: " << dcrip2.win[j] << endl;
+			
+			// calculate the difference of two windows
 			subtract(dcrip1.win[i], dcrip2.win[j], I);
-			//cout << "I: " << I << endl;
 			I2 = I.mul(I);
-			//cout << "I2: " << I2 << endl;
-			SSDval = (double)sum(I2).val[0]/(win_size*win_size);
-			//cout << "sum(I2): " << sum(I2).val[0] << endl;
-			//cout << "SSDval: " << SSDval << endl;
 
+			// calculate the SSD method value
+			SSDval = (double)sum(I2).val[0]/(win_size*win_size);
+
+			// find the most suitable point
 			if(SSDval < thresh)
 			{
 				if(SSDval < minVal){
@@ -416,11 +391,9 @@ void SSD(const descriptor& dcrip1, const descriptor& dcrip2, double thresh, doub
 				}
 			}
 		}
-		//cout << "minVal: " << minVal << endl;
-		//cout << "secondMin: " << secondMin << endl;
 
+		// avoid multiple to one pairs
 		ratio = minVal/secondMin;
-		cout << "ratio: " << ratio << endl;
 		if(ratio < ratio_thresh )
 		{
 			pair.push_back(tmpPair);
@@ -446,12 +419,19 @@ void SSD(const descriptor& dcrip1, const descriptor& dcrip2, double thresh, doub
 
 void drawPairs(const Mat& img1, const Mat& img2, Mat& imgOut, vector<pointPair>& pair)
 {
+	// matching line color space
+	Scalar Color[7] = {Scalar(255, 0, 255), Scalar(255, 255, 255), Scalar(0, 255, 0), Scalar(0, 255, 255),
+	Scalar(255, 0, 0), Scalar(255, 255, 0), Scalar(0, 0, 255)};
+	int count = 0;
 	Size size = img1.size();
+	// put two images to one
 	img1.copyTo(imgOut(Rect(0, 0, size.width, size.height)));
 	img2.copyTo(imgOut(Rect(size.width, 0, size.width, size.height)));
+	// draw lines
 	for(vector<pointPair>::iterator it = pair.begin(); it != pair.end(); ++it) 
 	{
-		line(imgOut, it->p1, Point(it->p2.x + size.width, it->p2.y), Scalar(255, 0, 0));
+		line(imgOut, it->p1, Point(it->p2.x + size.width, it->p2.y), Color[count%7]);
+		count++;
 	}
 }
 
@@ -472,45 +452,48 @@ void drawPairs(const Mat& img1, const Mat& img2, Mat& imgOut, vector<pointPair>&
 
 void drawPoints(Mat& img, const Mat& corner_s, double thresh, double scale, int win_size)
 {
-	//GaussianBlur(img, img, Size(win_size,win_size), scale, 0);
-
 	for(int j = 0; j < corner_s.rows; j++)
 	{
 		for(int i = 0; i < corner_s.cols; i++)
 		{
 			if(corner_s.at<double>(j,i) > thresh)
 			{
-				circle(img, Point(i,j), 5, Scalar(0), 2, 8, 0);
+				circle(img, Point(i,j), 4, Scalar(0, 255, 0), 2);
 			}
 		}
 	}
 }
 
 
-int main(){
+int main()
+{
 
-	//char* img_name1 = "pic1.jpg";
-	//char* img_name2 = "pic2.jpg";
-	char* img_name1 = "pic6.jpg";
-	char* img_name2 = "pic7.jpg";
+	/*-----------------------------------------------------------
+	 * HARRIS corner detection
+	 *-----------------------------------------------------------
+	 */
+
+
+	char* img_name1 = "pic1.jpg";
+	char* img_name2 = "pic2.jpg";
+	//char* img_name1 = "pic6.jpg";
+	//char* img_name2 = "pic7.jpg";
+	//char* img_name1 = "pic8.jpg";
+	//char* img_name2 = "pic9.jpg";
 
 	Mat src, src_gray;
 	Mat img1, img2;
-
-	int ddepth = -1;
 
 	img1 = imread(img_name1, CV_LOAD_IMAGE_GRAYSCALE);
 	img2 = imread(img_name2, CV_LOAD_IMAGE_GRAYSCALE);
 
 	Size img_size = img1.size();
 	
-	
-
-	Point2d p(10,0);
-	
+	// corner extraction
 	Mat corner_s1 = scaleHarris(img1, SCALE, HARRISWIN, NONMAXWIN, HAARWIN);
 	Mat corner_s2 = scaleHarris(img2, SCALE, HARRISWIN, NONMAXWIN, HAARWIN);
 
+	// show different scale images
 	imshow("img1", img1);
 	imshow("img2", img2);
 
@@ -519,16 +502,21 @@ int main(){
 
 	vector<pointPair> pair;
 	vector<pointPair> pair2;
-
-	//featureExtract(dcrip1, corner_s1, HARRISTHRESH, img1, NCCWIN);
-	//featureExtract(dcrip2, corner_s2, HARRISTHRESH2, img2, NCCWIN);
-	//NCC(dcrip1, dcrip2, NCCTHRESH, NCCRATIO, pair, NCCWIN);
+	
+	// feature extraction and NCC method
+	featureExtract(dcrip1, corner_s1, HARRISTHRESH, img1, NCCWIN);
+	featureExtract(dcrip2, corner_s2, HARRISTHRESH2, img2, NCCWIN);
+	NCC(dcrip1, dcrip2, NCCTHRESH, NCCRATIO, pair, NCCWIN);
+	// feature extraction and SSD method
 	featureExtract(dcrip1, corner_s1, HARRISTHRESH, img1, SSDWIN);
 	featureExtract(dcrip2, corner_s2, HARRISTHRESH2, img2, SSDWIN);
 	SSD(dcrip1, dcrip2, SSDTHRESH, SSDRATIO, pair2, SSDWIN);
 
 	cout << "pair size: " << pair.size() << endl;
 	cout << "pair2 size: " << pair2.size() << endl;
+
+	cvtColor(img1, img1, CV_GRAY2RGB);
+	cvtColor(img2, img2, CV_GRAY2RGB);
 
 	drawPoints(img1, corner_s1, HARRISTHRESH, SCALE, HARRISWIN);
 	
@@ -539,16 +527,18 @@ int main(){
 	namedWindow( "corners_window2", CV_WINDOW_AUTOSIZE );
 	imshow( "corners_window2", img2 );
 
-	//Mat dst(Size(img_size.width*2, img_size.height), img1.type());
+	Mat dst(Size(img_size.width*2, img_size.height), img1.type());
 	Mat dst2(Size(img_size.width*2, img_size.height), img1.type());
 
-	//drawPairs(img1, img2, dst, pair);
+	drawPairs(img1, img2, dst, pair);
 	drawPairs(img1, img2, dst2, pair2);
 
-	//namedWindow("corner pairs NCC", CV_WINDOW_AUTOSIZE);
-	//imshow("corner pairs NCC", dst);
+	namedWindow("corner pairs NCC", CV_WINDOW_AUTOSIZE);
+	imshow("corner pairs NCC", dst);
+	imwrite("NCCresult.jpg", dst);
 	namedWindow("corner pairs SSD", CV_WINDOW_AUTOSIZE);
 	imshow("corner pairs SSD", dst2);
+	imwrite("SSDresult.jpg", dst2);
 
 	
 
@@ -557,63 +547,72 @@ int main(){
 	 *-----------------------------------------------------------
 	 */
 
-	/*
-	Mat img_object = imread( img_name1, CV_LOAD_IMAGE_GRAYSCALE );
-	Mat img_scene = imread( img_name2, CV_LOAD_IMAGE_GRAYSCALE );
+	
+	Mat img_object = imread(img_name1, CV_LOAD_IMAGE_GRAYSCALE);
+	Mat img_scene = imread(img_name2, CV_LOAD_IMAGE_GRAYSCALE);
 
-	if( !img_object.data || !img_scene.data )
-	{ std::cout<< " --(!) Error reading images " << std::endl; return -1; }
+	GaussianBlur(img_object, img_object, Size(HARRISWIN, HARRISWIN), SCALE, 0);
+	GaussianBlur(img_scene, img_scene, Size(HARRISWIN, HARRISWIN), SCALE, 0);
+
+	if(!img_object.data || !img_scene.data)
+	{
+		std::cout<< " --(!) Error reading images " << std::endl; return -1; 
+	}
 
 	//-- Step 1: Detect the keypoints using SURF Detector
 	int minHessian = 400;
 
-	SurfFeatureDetector detector( minHessian );
+	SurfFeatureDetector detector(minHessian);
 
 	vector<KeyPoint> keypoints_object, keypoints_scene;
 
-	detector.detect( img_object, keypoints_object );
-	detector.detect( img_scene, keypoints_scene );
+	detector.detect(img_object, keypoints_object);
+	detector.detect(img_scene, keypoints_scene);
 
 	//-- Step 2: Calculate descriptors (feature vectors)
 	SurfDescriptorExtractor extractor;
 
 	Mat descriptors_object, descriptors_scene;
 
-	extractor.compute( img_object, keypoints_object, descriptors_object );
-	extractor.compute( img_scene, keypoints_scene, descriptors_scene );
+	extractor.compute(img_object, keypoints_object, descriptors_object);
+	extractor.compute(img_scene, keypoints_scene, descriptors_scene);
 
 	//-- Step 3: Matching descriptor vectors using FLANN matcher
 	FlannBasedMatcher matcher;
-	vector< DMatch > matches;
-	matcher.match( descriptors_object, descriptors_scene, matches );
+	vector<DMatch> matches;
+	matcher.match(descriptors_object, descriptors_scene, matches);
 
 	double max_dist = 0; double min_dist = 100;
 
 	//-- Quick calculation of max and min distances between keypoints
-	for( int i = 0; i < descriptors_object.rows; i++ )
-	{ double dist = matches[i].distance;
-		if( dist < min_dist ) min_dist = dist;
-		if( dist > max_dist ) max_dist = dist;
+	for(int i = 0; i < descriptors_object.rows; i++)
+	{
+		double dist = matches[i].distance;
+		if(dist < min_dist) min_dist = dist;
+		if(dist > max_dist) max_dist = dist;
 	}
 
 	printf("-- Max dist : %f \n", max_dist );
 	printf("-- Min dist : %f \n", min_dist );
 
 	//-- Draw only "good" matches (i.e. whose distance is less than 3*min_dist )
-	vector< DMatch > good_matches;
+	vector<DMatch> good_matches;
 
-	for( int i = 0; i < descriptors_object.rows; i++ )
-	{ if( matches[i].distance < 3*min_dist )
-		{ good_matches.push_back( matches[i]); }
+	for(int i = 0; i < descriptors_object.rows; i++)
+	{
+		if( matches[i].distance < 3*min_dist )
+		{
+			good_matches.push_back( matches[i]);
+		}
 	}
 
 	Mat img_matches;
-	drawMatches( img_object, keypoints_object, img_scene, keypoints_scene,
+	drawMatches(img_object, keypoints_object, img_scene, keypoints_scene,
                good_matches, img_matches, Scalar::all(-1), Scalar::all(-1),
-               vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+               vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS);
 
-	imshow( "Good Matches", img_matches );
-	*/
+	imshow("Good Matches", img_matches);
+	imwrite("SURFresult.jpg", img_matches);
 
 	waitKey(0);
 
