@@ -1,0 +1,11 @@
+%YAML:1.0
+lx1: !!opencv-matrix
+   rows: 2
+   cols: 1
+   dt: d
+   data: [ 363, 170, 1 ]
+rx1: !!opencv-matrix
+   rows: 2
+   cols: 1
+   dt: d
+   data: [ 463, 207, 1 ]
